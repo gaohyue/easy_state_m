@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:easy_state/easy_state.dart'; // 替换为你的实际包名
+import 'package:easy_state/easy_state_m.dart'; // 替换为你的实际包名
 
 // =============================================================================
 // 1. 准备测试桩 (Test Mocks)
