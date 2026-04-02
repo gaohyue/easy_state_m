@@ -6,7 +6,6 @@ class Item {
 }
 
 class PageAController extends EasyController {
-
   List<Item> items = [];
 
   @override
@@ -28,14 +27,10 @@ class PageAController extends EasyController {
     super.dispose();
   }
 
-
   void onTap(int index) {
     items[index].count++;
     refresh(ids: ["id$index"]);
   }
 
-  void loadMore() {
-
-  }
-
+  void loadMore() {}
 }

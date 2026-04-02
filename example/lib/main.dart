@@ -48,16 +48,20 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: InkWell(
-        onTap: (){
-          Navigator.of(context).push(MaterialPageRoute(builder: (context){
-            return PageA();
-          }));
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) {
+                return PageA();
+              },
+            ),
+          );
         },
-        child: Padding(padding: EdgeInsets.all(14),child: Center(
-          child: Text("Go to next"),
-        ),),
+        child: Padding(
+          padding: EdgeInsets.all(14),
+          child: Center(child: Text("Go to next")),
+        ),
       ),
     );
   }
 }
-
