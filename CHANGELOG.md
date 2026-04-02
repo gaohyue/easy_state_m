@@ -5,3 +5,8 @@
 * Added `EasyEvent` and `_EasyEventBus` for multi-way data synchronization.
 * Added `EasyConsumer` for granular local UI rebuilds.
 * Implemented strict architectural guardrails and assertions.
+
+
+## 1.0.2
+
+* Add Support Files.

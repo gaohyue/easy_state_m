@@ -1,4 +1,4 @@
-# Easy State Framework
+# Easy State Management Framework
 
 [English](#english) | [中文](#中文)
 
@@ -8,7 +8,7 @@
 
 ## 🚀 简介
 
-**Easy State Framework** 是一个轻量级、高性能、强类型安全的 Flutter 状态管理微框架。
+**Easy State Management Framework** 是一个轻量级、高性能、强类型安全的 Flutter 状态管理微框架。
 
 它专注于：
 
@@ -30,13 +30,9 @@
 ---
 
 ## 📦 安装
-
-将源码复制到项目中，或封装为 package：
-
 ```yaml
 dependencies:
-  easy_state:
-    path: ./easy_state
+  easy_state: ^1.0.2
 ```
 
 ---
@@ -170,7 +166,7 @@ MIT License
 
 ## 🚀 Overview
 
-**Easy State Framework** is a lightweight, high-performance, strongly-typed state management micro-framework for Flutter.
+**Easy State Management Framework** is a lightweight, high-performance, strongly-typed state management micro-framework for Flutter.
 
 It focuses on:
 
@@ -195,8 +191,7 @@ Add to your project:
 
 ```yaml
 dependencies:
-  easy_state:
-    path: ./easy_state
+  easy_state: ^1.0.2
 ```
 
 ---
