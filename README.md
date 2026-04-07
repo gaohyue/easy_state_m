@@ -1,204 +1,116 @@
-# Easy State Management Framework
+# easy_state_m
 
-[English](#english) | [中文](#中文)
-
----
-
-# 中文
-
-## 🚀 简介
-
-**Easy State Management Framework** 是一个轻量级、高性能、强类型安全的 Flutter 状态管理微框架。
-
-它专注于：
-
-* ⚡ O(1) 级别的状态访问
-* 🧠 强类型约束（避免运行时错误）
-* 🧩 高度解耦的事件驱动架构
-
-适用于中大型项目，以及对架构质量有较高要求的场景。
+A lightweight, high-performance, and easy-to-use Flutter state management framework
+based on event-driven architecture, dependency injection, and reactive UI.
 
 ---
 
-## ✨ 特性
+## 🌏 Language / 语言选择
 
-* **事件驱动（Event-Driven）**：基于全局 EventBus 实现模块解耦
-* **精确刷新（Fine-grained Rebuild）**：支持按 ID 局部刷新 UI
-* **零侵入（Non-intrusive）**：不污染业务代码
-* **强类型安全（Strict Type Safety）**：避免类型擦除与运行时崩溃
+- [English](sslocal://flow/file_open?url=%23english&flow_extra=eyJsaW5rX3R5cGUiOiJjb2RlX2ludGVycHJldGVyIn0=)
+- [中文](sslocal://flow/file_open?url=%23chinese&flow_extra=eyJsaW5rX3R5cGUiOiJjb2RlX2ludGVycHJldGVyIn0=)
 
 ---
 
-## 📦 安装
-```yaml
-dependencies:
-  easy_state: ^1.0.2
-```
-
----
-
-## 🧱 核心概念
-
-### 1. EasyController
-
-状态与业务逻辑中心：
-
-```dart
-class CounterController extends EasyController {
-  int count = 0;
-
-  void increment() {
-    count++;
-    refresh();
-  }
-}
-```
-
----
-
-### 2. EasyScope（依赖注入）
-
-```dart
-EasyScope(
-  create: () => CounterController(),
-  builder: (context, controller) {
-    return CounterPage();
-  },
-)
-```
-
----
-
-### 3. EasyConsumer（UI响应）
-
-```dart
-EasyConsumer<CounterController>(
-  builder: (context, controller) {
-    return Text('${controller.count}');
-  },
-)
-```
-
----
-
-### 4. 精确刷新
-
-```dart
-refresh(ids: ['header']);
-```
-
-```dart
-EasyConsumer<CounterController>(
-  id: 'header',
-  builder: (context, controller) {
-    return Text('${controller.count}');
-  },
-)
-```
-
----
-
-### 5. 全局事件通信
-
-#### 定义事件
-
-```dart
-class IncrementEvent extends EasyEvent {
-  @override
-  Type get targetController => CounterController;
-}
-```
-
-#### 绑定事件
-
-```dart
-@override
-List<EasyEventBinding> get eventBindings => [
-  EasyEventBinding<IncrementEvent>((event) {
-    increment();
-  }),
-];
-```
-
-#### 发送事件
-
-```dart
-EasyController.broadcast(IncrementEvent());
-```
-
----
-
-## 🔄 生命周期
-
-| 方法           | 说明             |
-| ------------ | -------------- |
-| initialize() | 初始化 Controller |
-| dispose()    | 销毁 Controller  |
-| refresh()    | 触发 UI 更新       |
-
----
-
-## ⚠️ 设计约束
-
-* ❌ 禁止事件多态（必须精确匹配类型）
-* ❌ 禁止嵌套同类型 EasyScope
-* ✅ Shared 模式需手动 initialize()
-
----
-
-## 🧠 设计理念
-
-该框架的核心思想：
-
-> **状态 = 数据 + 事件 + 生命周期**
-
-通过事件驱动实现模块间解耦，通过类型系统保证安全，通过局部刷新保证性能。
-
----
-
-## 📄 License
-
-MIT License
-
----
-
+<a id="english"></a>
 # English
 
-## 🚀 Overview
+## Overview
 
-**Easy State Management Framework** is a lightweight, high-performance, strongly-typed state management micro-framework for Flutter.
+easy_state_m is a lightweight, high-performance state management framework for Flutter.
+It provides strict UI-business decoupling, localized state, precise partial UI refresh,
+and lifecycle-safe dependency injection.
 
-It focuses on:
+## Architecture Diagram
 
-* ⚡ O(1) state access
-* 🧠 Strong type safety
-* 🧩 Event-driven architecture
+```text
+=======================================================================
+               [ Communication Layer (Stateless) ]
+=======================================================================
+                               |
+                               | 1. broadcast(EasyEvent)
+                               v
+                     +-------------------+
+                     |  _EasyEventBus    | (Pure Message Broker)
+                     +-------------------+
+                               |
+                               | 2. Precise Event Routing
+                               v
+=======================================================================
+                [ State Management Layer (Memory) ]
+=======================================================================
+                     +-------------------+
+                     | EasyController<T> | (State Container)
+                     | - Local State     |
+                     | - Event Bindings  |
+                     +-------------------+
+                       ^       |       ^
+   3. initialize() /   |       |       |
+      dispose()        |       |       |  4. refresh(ids: ['x'])
+                       |       |       |     (Local Stream)
+=======================|=======|=======|===============================
+               [ Flutter Widget Tree (Context) ]
+=======================|=======|=======|===============================
+                       |       |       |
++----------------------+--+    |       |
+| MultiEasyScope          |    |       |
+|  └─ EasyScope<T> -------+----+       |
+|      (InheritedWidget)  |            |
++-------------------------+            |
+           |                           |
+           | 5. EasyScope.of(context)  |
+           v                           |
++-------------------------+            |
+| EasyConsumer<T>         | <----------+
+| (Precise UI Rebuilds)   |
++-------------------------+
+```
 
----
+## Core Concepts
 
-## ✨ Features
+### EasyScope
+- State scope management based on `InheritedWidget` with O(1) lookup.
+- Automatically manages controller lifecycle: `initialize()` and `dispose()`.
+- Strict scope isolation eliminates global state pollution and memory leaks.
 
-* **Event-Driven Architecture** via global EventBus
-* **Fine-grained UI updates** using IDs
-* **Zero-intrusive design**
-* **Strict type safety** (no runtime casting issues)
+### EasyController
+- Centralized state container and business logic handler.
+- Fully decoupled from UI elements.
+- Uses stream for partial UI refresh.
+- Declarative event binding via `eventBindings`.
 
----
+### EasyConsumer
+- Reactive UI builder that listens to state changes.
+- Supports ID-based precise rebuilding to avoid unnecessary renders.
+- Pure view layer with zero business logic.
 
-## 📦 Installation
+## Key Advantages
 
-Add to your project:
+- **Localized state, no global pollution**
+  - State is scoped to a particular widget subtree, avoiding conflicts and side effects.
+
+- **Automatic lifecycle management**
+  Controllers are created and disposed automatically with the widget tree.
+
+- **Efficient & precise UI refresh**
+  - Refresh only target widgets by ID, greatly improving performance.
+
+- **Strict UI-business separation**
+  - UI only renders data; all logic resides in the controller.
+
+- **Loosely coupled event communication**
+  - Components communicate via events without direct dependencies.
+
+## Installation
 
 ```yaml
 dependencies:
-  easy_state: ^1.0.2
+  easy_state_m: ^1.1.0
 ```
 
----
+## Usage
 
-## 🧱 Core Concepts
-
-### 1. EasyController
+### Single Page State Management
 
 ```dart
 class CounterController extends EasyController {
@@ -206,102 +118,312 @@ class CounterController extends EasyController {
 
   void increment() {
     count++;
-    refresh();
+    refresh(ids: ['counter_text']);
+  }
+}
+
+class CounterPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return EasyScope<CounterController>(
+      create: () => CounterController(),
+      builder: (context, controller) => Scaffold(
+        body: Center(
+          child: EasyConsumer<CounterController>(
+            id: 'counter_text',
+            builder: (context, ctrl) => Text('Count: ${ctrl.count}'),
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: controller.increment,
+          child: const Icon(Icons.add),
+        ),
+      ),
+    );
   }
 }
 ```
 
----
-
-### 2. EasyScope (Dependency Injection)
+### Global State & Multi Injection
 
 ```dart
-EasyScope(
-  create: () => CounterController(),
-  builder: (context, controller) {
-    return CounterPage();
-  },
-)
-```
+class ThemeController extends EasyController {
+  bool isDarkMode = false;
 
----
+  void toggleTheme() {
+    isDarkMode = !isDarkMode;
+    refresh();
+  }
+}
 
-### 3. EasyConsumer (Reactive UI)
-
-```dart
-EasyConsumer<CounterController>(
-  builder: (context, controller) {
-    return Text('${controller.count}');
-  },
-)
-```
-
----
-
-### 4. Fine-grained Refresh
-
-```dart
-refresh(ids: ['header']);
-```
-
----
-
-### 5. Global Event System
-
-#### Define Event
-
-```dart
-class IncrementEvent extends EasyEvent {
+class MyApp extends StatelessWidget {
   @override
-  Type get targetController => CounterController;
+  Widget build(BuildContext context) {
+    return MultiEasyScope(
+      bindings: [
+        EasyScopeBinding<ThemeController>(create: () => ThemeController()),
+      ],
+      child: EasyConsumer<ThemeController>(
+        builder: (context, themeCtrl) {
+          return MaterialApp(
+            title: 'Easy State Demo',
+            theme: themeCtrl.isDarkMode ? ThemeData.dark() : ThemeData.light(),
+            home: const HomePage(),
+          );
+        },
+      ),
+    );
+  }
 }
 ```
 
-#### Bind Event
+### Cross-Page Communication
 
 ```dart
-@override
-List<EasyEventBinding> get eventBindings => [
-  EasyEventBinding<IncrementEvent>((event) {
-    increment();
-  }),
-];
+class UserLoginEvent extends EasyEvent {
+  final String userName;
+  UserLoginEvent(this.userName);
+
+  @override
+  Type get targetController => DashboardController;
+}
+
+class DashboardController extends EasyController {
+  String currentUserName = "Not Logged In";
+
+  @override
+  List<EasyEventBinding> get eventBindings => [
+        EasyEventBinding<UserLoginEvent>((event) {
+          currentUserName = event.userName;
+          refresh();
+        }),
+      ];
+}
+
+// Broadcast event
+//EasyController.broadcast(UserLoginEvent("token"));
 ```
 
-#### Dispatch Event
+## Notes
+
+- Do NOT nest multiple scopes of the same controller type.
+- Always use explicit generic types for `EasyEventBinding<T>`.
+- Manually call `initialize()` when using `EasyScope.value()`.
+
+## License
+
+MIT
+
+---
+
+---
+
+<a id="chinese"></a>
+# 中文
+
+## 简介
+
+easy_state_m 是一款轻量、高性能、易于使用的 Flutter 状态管理框架，
+基于事件驱动 + 依赖注入 + 响应式 UI 构建，专注局部状态、精准刷新与强解耦架构。
+
+## 架构图
+
+```text
+=======================================================================
+               [ Communication Layer (Stateless) ]
+=======================================================================
+                               |
+                               | 1. broadcast(EasyEvent)
+                               v
+                     +-------------------+
+                     |  _EasyEventBus    | (Pure Message Broker)
+                     +-------------------+
+                               |
+                               | 2. Precise Event Routing
+                               v
+=======================================================================
+                [ State Management Layer (Memory) ]
+=======================================================================
+                     +-------------------+
+                     | EasyController<T> | (State Container)
+                     | - Local State     |
+                     | - Event Bindings  |
+                     +-------------------+
+                       ^       |       ^
+   3. initialize() /   |       |       |
+      dispose()        |       |       |  4. refresh(ids: ['x'])
+                       |       |       |     (Local Stream)
+=======================|=======|=======|===============================
+               [ Flutter Widget Tree (Context) ]
+=======================|=======|=======|===============================
+                       |       |       |
++----------------------+--+    |       |
+| MultiEasyScope          |    |       |
+|  └─ EasyScope<T> -------+----+       |
+|      (InheritedWidget)  |            |
++-------------------------+            |
+           |                           |
+           | 5. EasyScope.of(context)  |
+           v                           |
++-------------------------+            |
+| EasyConsumer<T>         | <----------+
+| (Precise UI Rebuilds)   |
++-------------------------+
+```
+
+## 核心概念
+
+### EasyScope
+- 基于 InheritedWidget 的状态作用域，提供 O(1) 快速查找。
+- 自动管理控制器生命周期，执行 initialize / dispose。
+- 严格作用域隔离，避免全局状态污染与内存泄漏。
+
+### EasyController
+- 局部状态与业务逻辑统一载体。
+- 与 UI 层完全解耦。
+- 基于 Stream 实现局部精准刷新。
+- 通过 eventBindings 声明式监听事件。
+
+### EasyConsumer
+- 响应式 UI 消费组件。
+- 支持按 ID 精准刷新，减少无用重建。
+- 纯视图层，不包含任何业务逻辑。
+
+## 核心优势
+
+- **状态局部化，不污染全局**
+  - 状态严格限定在当前作用域，无全局冲突、无意外副作用。
+
+- **生命周期自动管理**
+  - 控制器随组件树自动创建、销毁，内存更安全。
+
+- **UI 高效精准刷新**
+  - 按 ID 局部刷新，只重建需要更新的组件，性能大幅提升。
+
+- **UI 与业务逻辑彻底解耦**
+  - UI 只负责渲染，逻辑全部收敛于控制器。
+
+- **事件驱动，组件零耦合通信**
+  - 跨页面、跨组件通过事件通信，无需互相依赖。
+
+## 安装
+
+```yaml
+dependencies:
+  easy_state_m: ^1.1.0
+```
+
+## 使用示例
+
+### 单页面状态管理
 
 ```dart
-EasyController.broadcast(IncrementEvent());
+class CounterController extends EasyController {
+  int count = 0;
+
+  void increment() {
+    count++;
+    refresh(ids: ['counter_text']);
+  }
+}
+
+class CounterPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return EasyScope<CounterController>(
+      create: () => CounterController(),
+      builder: (context, controller) => Scaffold(
+        body: Center(
+          child: EasyConsumer<CounterController>(
+            id: 'counter_text',
+            builder: (context, ctrl) => Text('计数: ${ctrl.count}'),
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: controller.increment,
+          child: const Icon(Icons.add),
+        ),
+      ),
+    );
+  }
+}
+```
+
+### 全局状态与多控制器注入
+
+```dart
+class ThemeController extends EasyController {
+  bool isDarkMode = false;
+
+  void toggleTheme() {
+    isDarkMode = !isDarkMode;
+    refresh();
+  }
+}
+
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MultiEasyScope(
+      bindings: [
+        EasyScopeBinding<ThemeController>(create: () => ThemeController()),
+      ],
+      child: EasyConsumer<ThemeController>(
+        builder: (context, themeCtrl) {
+          return MaterialApp(
+            title: 'Easy State Demo',
+            theme: themeCtrl.isDarkMode ? ThemeData.dark() : ThemeData.light(),
+            home: const HomePage(),
+          );
+        },
+      ),
+    );
+  }
+}
+```
+
+### 跨页面通信
+
+```dart
+class UserLoginEvent extends EasyEvent {
+  final String userName;
+  UserLoginEvent(this.userName);
+
+  @override
+  Type get targetController => DashboardController;
+}
+
+class DashboardController extends EasyController {
+  String currentUserName = "未登录";
+
+  @override
+  List<EasyEventBinding> get eventBindings => [
+        EasyEventBinding<UserLoginEvent>((event) {
+          currentUserName = event.userName;
+          refresh();
+        }),
+      ];
+}
+
+// 发送事件
+//EasyController.broadcast(UserLoginEvent("token"));
+```
+
+## 注意事项
+
+- 禁止嵌套同类型 EasyScope。
+- 事件绑定必须使用明确泛型，禁止使用基类或 dynamic。
+- 使用 EasyScope.value() 时需手动调用 initialize()。
+
+## 开源协议
+
+MIT
 ```
 
 ---
 
-## 🔄 Lifecycle
-
-| Method       | Description           |
-| ------------ | --------------------- |
-| initialize() | Initialize controller |
-| dispose()    | Dispose controller    |
-| refresh()    | Trigger UI rebuild    |
-
----
-
-## ⚠️ Constraints
-
-* ❌ No event polymorphism
-* ❌ No nested same-type EasyScope
-* ✅ Shared instances must call initialize()
-
----
-
-## 🧠 Philosophy
-
-> **State = Data + Events + Lifecycle**
-
-Decoupling via events, safety via types, performance via fine-grained updates.
-
----
-
-## 📄 License
-
-MIT License
+### 使用方法
+1. 新建文件 → 命名为 **`README.md`**
+2. 把上面全部内容粘贴进去
+3. 放到项目根目录即可
+4. GitHub/GitLab/Pub 均可正常渲染中英双语切换

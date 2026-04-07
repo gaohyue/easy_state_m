@@ -10,3 +10,7 @@
 ## 1.0.2
 
 * Add Support Files.
+
+## 1.1.0
+* Add MultiEasyScope
+* Update README.md

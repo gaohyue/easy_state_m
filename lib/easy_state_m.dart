@@ -42,10 +42,10 @@ class EasyEventBinding<T extends EasyEvent> {
   /// Throws an assertion error if event polymorphism is detected.
   void execute(dynamic event) {
     assert(
-      event.runtimeType == T,
-      '[Easy State] Event Polymorphism is strictly forbidden.\n'
-      'Expected exactly <$T>, but received <${event.runtimeType}>.\n'
-      'Please ensure you bind the exact event class to avoid routing leaks.',
+    event.runtimeType == T,
+    '[Easy State] Event Polymorphism is strictly forbidden.\n'
+        'Expected exactly <$T>, but received <${event.runtimeType}>.\n'
+        'Please ensure you bind the exact event class to avoid routing leaks.',
     );
 
     if (event is T) {
@@ -78,8 +78,8 @@ class _EasyEventBus {
   /// Resets the internal bus. Used strictly for unit testing.
   // @visibleForTesting
   // static void reset() {
-  //   _bus.close();
-  //   _bus = StreamController<EasyEvent>.broadcast();
+  //   // Note: Re-assignment requires removing the 'final' keyword from _bus
+  //   // This is typically only enabled when running specific test suites.
   // }
 }
 
@@ -112,7 +112,7 @@ abstract class EasyController {
   // --- Local UI Driver ---
 
   final StreamController<List<String>?> _refreshController =
-      StreamController<List<String>?>.broadcast();
+  StreamController<List<String>?>.broadcast();
 
   /// Exposes the refresh stream for [EasyConsumer]s to listen to.
   Stream<List<String>?> get refreshStream => _refreshController.stream;
@@ -150,10 +150,10 @@ abstract class EasyController {
 
     for (final binding in eventBindings) {
       assert(
-        binding.eventType != EasyEvent && binding.eventType != dynamic,
-        '[Easy State] Type Erasure Detected in $runtimeType.\n'
-        'You must explicitly specify the generic type for EasyEventBinding.\n'
-        'Correct usage: EasyEventBinding<MyEvent>(_onEvent).',
+      binding.eventType != EasyEvent && binding.eventType != dynamic,
+      '[Easy State] Type Erasure Detected in $runtimeType.\n'
+          'You must explicitly specify the generic type for EasyEventBinding.\n'
+          'Correct usage: EasyEventBinding<MyEvent>(_onEvent).',
       );
       _bindingsMap[binding.eventType] = binding;
     }
@@ -163,19 +163,19 @@ abstract class EasyController {
           .where((event) => event.targetController == runtimeType)
           .listen(
             (event) {
-              try {
-                _bindingsMap[event.runtimeType]?.execute(event);
-              } catch (e, stackTrace) {
-                // Business Exception Isolation: Prevents a faulty handler from crashing the broadcast stream.
-                debugPrint(
-                  '[$runtimeType] Event Execution Error: $e\n$stackTrace',
-                );
-              }
-            },
-            onError: (error, stackTrace) {
-              debugPrint('[$runtimeType] Stream Error: $error\n$stackTrace');
-            },
-          );
+          try {
+            _bindingsMap[event.runtimeType]?.execute(event);
+          } catch (e, stackTrace) {
+            // Business Exception Isolation: Prevents a faulty handler from crashing the broadcast stream.
+            debugPrint(
+              '[$runtimeType] Event Execution Error: $e\n$stackTrace',
+            );
+          }
+        },
+        onError: (error, stackTrace) {
+          debugPrint('[$runtimeType] Stream Error: $error\n$stackTrace');
+        },
+      );
     }
   }
 
@@ -209,13 +209,14 @@ class _EasyInheritedScope<T extends EasyController> extends InheritedWidget {
 
 /// Builder signature for [EasyScope].
 typedef EasyScopeBuilder<T extends EasyController> =
-    Widget Function(BuildContext context, T controller);
+Widget Function(BuildContext context, T controller);
 
 /// A dependency injection container and lifecycle manager for [EasyController].
 class EasyScope<T extends EasyController> extends StatefulWidget {
   final T Function()? _create;
   final T? _value;
-  final EasyScopeBuilder<T> builder;
+  final EasyScopeBuilder<T>? builder;
+  final Widget? child;
   final bool _isShared;
 
   /// [Standard Mode]: Lazily creates the controller and manages its lifecycle.
@@ -223,19 +224,32 @@ class EasyScope<T extends EasyController> extends StatefulWidget {
   /// The [create] closure protects the state from being wiped out during Flutter Hot Reload.
   const EasyScope({
     required T Function() create,
-    required this.builder,
+    this.builder,
+    this.child,
     super.key,
-  }) : _create = create,
-       _value = null,
-       _isShared = false;
+  })  : assert(
+  (builder == null) != (child == null),
+  '[Easy State] You must provide either a builder or a child, but not both.',
+  ),
+        _create = create,
+        _value = null,
+        _isShared = false;
 
   /// [Shared Mode]: Injects an existing controller instance without interfering with its lifecycle.
   ///
   /// Useful for cross-route state relay or providing global singletons.
-  const EasyScope.value({required T value, required this.builder, super.key})
-    : _value = value,
-      _create = null,
-      _isShared = true;
+  const EasyScope.value({
+    required T value,
+    this.builder,
+    this.child,
+    super.key,
+  })  : assert(
+  (builder == null) != (child == null),
+  '[Easy State] You must provide either a builder or a child, but not both.',
+  ),
+        _value = value,
+        _create = null,
+        _isShared = true;
 
   /// Safely looks up the controller instance. Returns `null` if not found.
   static T? maybeOf<T extends EasyController>(BuildContext context) {
@@ -255,8 +269,8 @@ class EasyScope<T extends EasyController> extends StatefulWidget {
         ),
         ErrorHint(
           'Please ensure:\n'
-          '1. The widget calling EasyScope.of() is wrapped inside an EasyScope<$T>.\n'
-          '2. You did not cross a Navigator barrier (pushed routes cannot find providers from previous routes unless shared).',
+              '1. The widget calling EasyScope.of() is wrapped inside an EasyScope<$T>.\n'
+              '2. You did not cross a Navigator barrier (pushed routes cannot find providers from previous routes unless shared).',
         ),
       ]);
     }
@@ -279,10 +293,10 @@ class _EasyScopeState<T extends EasyController> extends State<EasyScope<T>> {
     } else {
       _controller = widget._value!;
       assert(
-        _controller.isInitialized,
-        '[Easy State] Uninitialized Shared Instance Detected.\n'
-        'You injected <$T> using EasyScope.value, but its initialize() was never called.\n'
-        'If this is a global singleton, ensure you manually call .initialize() during its registration.',
+      _controller.isInitialized,
+      '[Easy State] Uninitialized Shared Instance Detected.\n'
+          'You injected <$T> using EasyScope.value, but its initialize() was never called.\n'
+          'If this is a global singleton, ensure you manually call .initialize() during its registration.',
       );
     }
   }
@@ -305,11 +319,11 @@ class _EasyScopeState<T extends EasyController> extends State<EasyScope<T>> {
           ),
           ErrorHint(
             'Due to Flutter\'s InheritedWidget lookup mechanism, the inner Scope will completely '
-            'shadow the outer Scope, causing broken data flows and ghost states.\n\n'
-            'Solutions:\n'
-            '1. Ensure similar modules are sibling nodes, not nested.\n'
-            '2. If nesting is absolutely required, create a distinct subclass (e.g., class Inner$T extends $T) '
-            'to provide a unique lookup Type.',
+                'shadow the outer Scope, causing broken data flows and ghost states.\n\n'
+                'Solutions:\n'
+                '1. Ensure similar modules are sibling nodes, not nested.\n'
+                '2. If nesting is absolutely required, create a distinct subclass (e.g., class Inner$T extends $T) '
+                'to provide a unique lookup Type.',
           ),
         ]);
       }
@@ -323,8 +337,8 @@ class _EasyScopeState<T extends EasyController> extends State<EasyScope<T>> {
     if (widget._isShared && widget._value != oldWidget._value) {
       _controller = widget._value!;
       assert(
-        _controller.isInitialized,
-        '[Easy State] Swapped shared instance is uninitialized.',
+      _controller.isInitialized,
+      '[Easy State] Swapped shared instance is uninitialized.',
       );
     }
   }
@@ -341,7 +355,9 @@ class _EasyScopeState<T extends EasyController> extends State<EasyScope<T>> {
   Widget build(BuildContext context) {
     return _EasyInheritedScope<T>(
       controller: _controller,
-      child: Builder(builder: (ctx) => widget.builder(ctx, _controller)),
+      child: widget.child ?? Builder(
+        builder: (ctx) => widget.builder!(ctx, _controller),
+      ),
     );
   }
 }
@@ -352,7 +368,7 @@ class _EasyScopeState<T extends EasyController> extends State<EasyScope<T>> {
 
 /// Builder signature for [EasyConsumer].
 typedef EasyConsumerBuilder<T extends EasyController> =
-    Widget Function(BuildContext context, T controller);
+Widget Function(BuildContext context, T controller);
 
 /// A reactive UI widget that listens to [EasyController.refreshStream] for precise rebuilds.
 class EasyConsumer<T extends EasyController> extends StatefulWidget {
@@ -398,7 +414,7 @@ class _EasyConsumerState<T extends EasyController>
 
       if (_controller != null && !_controller!.isDisposed) {
         _subscription = _controller!.refreshStream.listen(
-          (updateIds) {
+              (updateIds) {
             if (!mounted) return;
 
             if (updateIds == null) {
@@ -434,5 +450,89 @@ class _EasyConsumerState<T extends EasyController>
     }
     // Synchronous read of memory data eliminates first-frame white screens.
     return widget.builder(context, _controller!);
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Part 6: Multi-Scope Injection
+// -----------------------------------------------------------------------------
+
+/// A delegate contract used to build nested widget structures.
+///
+/// This is used internally by [MultiEasyScope] to defer the construction
+/// of [EasyScope] widgets until they are correctly ordered in the tree.
+abstract class EasyScopeDelegate {
+  /// Builds the widget with the provided [child] as its descendant.
+  Widget build(Widget child);
+}
+
+/// A configuration object for multi-instance injection.
+///
+/// Use this inside a [MultiEasyScope] to define how a specific
+/// [EasyController] should be provided to the widget tree.
+class EasyScopeBinding<T extends EasyController> extends EasyScopeDelegate {
+  /// The factory function used to create the controller (Standard Mode).
+  final T Function()? create;
+
+  /// The existing controller instance to inject (Shared Mode).
+  final T? value;
+
+  /// Whether this binding is injecting an existing shared instance.
+  final bool isShared;
+
+  /// Creates a standard binding that lazily instantiates the controller.
+  EasyScopeBinding({required this.create})
+      : value = null,
+        isShared = false;
+
+  /// Creates a shared binding that injects an existing controller instance.
+  ///
+  /// Note: This mode does not manage the controller's lifecycle.
+  EasyScopeBinding.value({required this.value})
+      : create = null,
+        isShared = true;
+
+  @override
+  Widget build(Widget child) {
+    if (isShared) {
+      return EasyScope<T>.value(value: value!, child: child);
+    } else {
+      return EasyScope<T>(create: create!, child: child);
+    }
+  }
+}
+
+/// An aggregator for multiple [EasyScope] injections.
+///
+/// Eliminates "nested callback hell" when your UI requires multiple
+/// controllers. It takes a list of [EasyScopeBinding]s and automatically
+/// nests them in the correct order.
+class MultiEasyScope extends StatelessWidget {
+  /// The list of scope bindings to inject.
+  ///
+  /// The bindings are applied from top to bottom. For example, the first
+  /// binding in the list will be the outermost widget in the tree, making
+  /// it accessible to all subsequent bindings.
+  final List<EasyScopeDelegate> bindings;
+
+  /// The widget below this multi-scope in the tree.
+  final Widget child;
+
+  /// Creates a multi-scope injector.
+  const MultiEasyScope({
+    required this.bindings,
+    required this.child,
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Widget current = child;
+    // Iterate in reverse order to ensure the first item in the list
+    // becomes the outermost widget in the tree.
+    for (final bind in bindings.reversed) {
+      current = bind.build(current);
+    }
+    return current;
   }
 }
