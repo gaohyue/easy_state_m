@@ -1,18 +1,14 @@
-# easy_state_m
+# Easy State Management Framework
 
 A lightweight, high-performance, and easy-to-use Flutter state management framework
 based on event-driven architecture, dependency injection, and reactive UI.
 
 ---
 
-## 🌏 Language / 语言选择
-
-- [English](sslocal://flow/file_open?url=%23english&flow_extra=eyJsaW5rX3R5cGUiOiJjb2RlX2ludGVycHJldGVyIn0=)
-- [中文](sslocal://flow/file_open?url=%23chinese&flow_extra=eyJsaW5rX3R5cGUiOiJjb2RlX2ludGVycHJldGVyIn0=)
+## Language
+[English](#English) | [中文](#中文)
 
 ---
-
-<a id="english"></a>
 # English
 
 ## Overview
@@ -218,7 +214,6 @@ MIT
 
 ---
 
-<a id="chinese"></a>
 # 中文
 
 ## 简介
