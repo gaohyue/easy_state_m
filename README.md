@@ -419,11 +419,3 @@ class DashboardController extends EasyController {
 
 MIT
 ```
-
----
-
-### 使用方法
-1. 新建文件 → 命名为 **`README.md`**
-2. 把上面全部内容粘贴进去
-3. 放到项目根目录即可
-4. GitHub/GitLab/Pub 均可正常渲染中英双语切换
