@@ -1,66 +1,39 @@
-import 'package:example/page_a/page_a.dart';
+import 'package:easy_state/easy_state_m.dart';
+import 'package:example/controllers/summary_controller.dart';
+import 'package:example/pages/home_page.dart';
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const MyApp());
+  // Initialize the app-level controller before runApp so it is ready
+  // to receive channel messages as soon as any TaskPage is opened.
+  final summaryController = SummaryController()..initialize();
+
+  runApp(MyApp(summaryController: summaryController));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final SummaryController summaryController;
 
-  // This widget is the root of your application.
+  const MyApp({required this.summaryController, super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key});
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: InkWell(
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) {
-                return PageA();
-              },
-            ),
-          );
-        },
-        child: Padding(
-          padding: EdgeInsets.all(14),
-          child: Center(child: Text("Go to next")),
+    // EasyMultiScope nests all app-level scopes without deep indentation.
+    // SummaryController is shared (externally managed), so EasyScope.value
+    // is used — the scope does NOT dispose it on unmount.
+    //
+    // Add more app-level controllers here as EasyScopeProvide entries.
+    return EasyMultiScope(
+      entries: [
+        EasyScopeProvide.value(value: summaryController),
+      ],
+      child: MaterialApp(
+        title: 'Easy State Demo',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+          useMaterial3: true,
         ),
+        home: const HomePage(),
       ),
     );
   }

@@ -1,6 +1,6 @@
 name: easy_state_m
 description: "Easy State Framework is a lightweight, high-performance, strongly-typed state management micro-framework for Flutter."
-version: 1.1.1
+version: 1.2.0
 homepage: https://github.com/gaohyue/easy_state_m.git
 repository: https://github.com/gaohyue/easy_state_m.git
 issue_tracker: https://github.com/gaohyue/easy_state_m/issues
