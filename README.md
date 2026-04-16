@@ -97,7 +97,7 @@ Dispatching a message requires exactly two HashMap lookups regardless of how man
 
 ```yaml
 dependencies:
-  easy_state_m: ^1.1.1
+  easy_state_m: ^1.2.0
 ```
 
 ---
@@ -409,7 +409,7 @@ controllerType  →  channelName  →  List<handler>
 
 ```yaml
 dependencies:
-  easy_state_m: ^1.1.1
+  easy_state_m: ^1.2.0
 ```
 
 ---
