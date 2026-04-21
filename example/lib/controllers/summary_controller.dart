@@ -1,4 +1,4 @@
-import 'package:easy_state/easy_state_m.dart';
+import 'package:easy_state_m/easy_state_m.dart';
 
 /// App-level controller that tracks the number of completed tasks.
 ///

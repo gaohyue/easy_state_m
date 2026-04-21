@@ -1,19 +1,10 @@
-## 1.0.0
+## 1.2.1
 
-* Initial release of Easy State.
-* Added `EasyController` and `EasyScope` for O(1) dependency injection.
-* Added `EasyEvent` and `_EasyEventBus` for multi-way data synchronization.
-* Added `EasyConsumer` for granular local UI rebuilds.
-* Implemented strict architectural guardrails and assertions.
-
-
-## 1.0.2
-
-* Add Support Files.
-
-## 1.1.0
-* Add MultiEasyScope
-* Update README.md
+* Fix compatibility: replace Dart 3 record type `(String, void Function(dynamic))`
+  with private class `_ChannelEntry` to support Dart 2.17+.
+* Update SDK constraint from `^3.11.0` to `>=2.17.0 <4.0.0` (Flutter >= 3.0.0).
+* Fix example pubspec: rename dependency key `easy_state` → `easy_state_m` to match
+  the package name, and update all import paths accordingly.
 
 ## 1.2.0
 
@@ -60,4 +51,21 @@
 * Full English API documentation on all public classes and members (pub.dev standard).
 * Updated `README.md` with architecture diagram, data-flow table, performance notes,
   and complete bilingual (English / 中文) usage guide.
+
+## 1.0.2
+
+* Add Support Files.
+
+## 1.1.0
+* Add MultiEasyScope
+* Update README.md
+
+## 1.0.0
+
+* Initial release of Easy State.
+* Added `EasyController` and `EasyScope` for O(1) dependency injection.
+* Added `EasyEvent` and `_EasyEventBus` for multi-way data synchronization.
+* Added `EasyConsumer` for granular local UI rebuilds.
+* Implemented strict architectural guardrails and assertions.
+
 

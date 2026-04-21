@@ -1,4 +1,4 @@
-import 'package:easy_state/easy_state_m.dart';
+import 'package:easy_state_m/easy_state_m.dart';
 import 'package:example/controllers/summary_controller.dart';
 import 'package:example/pages/home_page.dart';
 import 'package:flutter/material.dart';

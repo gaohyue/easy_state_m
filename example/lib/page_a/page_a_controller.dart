@@ -1,4 +1,4 @@
-import 'package:easy_state/easy_state_m.dart';
+import 'package:easy_state_m/easy_state_m.dart';
 
 class Item {
   int count;

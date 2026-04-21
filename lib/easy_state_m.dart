@@ -207,6 +207,17 @@ class EasyChannelBinding<T> {
   }
 }
 
+/// Pairs a channel name with its raw handler for precise unregistration.
+///
+/// Used internally by [EasyController] to avoid Dart 3 record syntax,
+/// keeping the minimum SDK requirement at Dart 2.17.
+class _ChannelEntry {
+  final String channel;
+  final void Function(dynamic) handler;
+
+  const _ChannelEntry(this.channel, this.handler);
+}
+
 // -----------------------------------------------------------------------------
 // Part 3: Global Channel Bus
 // -----------------------------------------------------------------------------
@@ -458,8 +469,9 @@ abstract class EasyController {
   @protected
   List<EasyChannelBinding> get channelBindings => [];
 
-  // Stores (channel, handler) pairs for precise unregistration on dispose.
-  final List<(String, void Function(dynamic))> _registeredHandlers = [];
+  // Stores channel + handler pairs for precise unregistration on dispose.
+  // Uses a plain class instead of a Dart 3 record to stay compatible with Dart 2.17+.
+  final List<_ChannelEntry> _registeredHandlers = [];
 
   // ---------------------------------------------------------------------------
   // Lifecycle
@@ -479,7 +491,7 @@ abstract class EasyController {
 
     for (final binding in channelBindings) {
       EasyChannel.instance.listen(runtimeType, binding.channel, binding._execute);
-      _registeredHandlers.add((binding.channel, binding._execute));
+      _registeredHandlers.add(_ChannelEntry(binding.channel, binding._execute));
     }
   }
 
@@ -497,8 +509,8 @@ abstract class EasyController {
 
     _debounceTimer?.cancel();
 
-    for (final (channel, handler) in _registeredHandlers) {
-      EasyChannel.instance.cancel(runtimeType, channel, handler);
+    for (final entry in _registeredHandlers) {
+      EasyChannel.instance.cancel(runtimeType, entry.channel, entry.handler);
     }
     _registeredHandlers.clear();
     _notifier.dispose();
