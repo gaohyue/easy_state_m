@@ -97,7 +97,7 @@ Dispatching a message requires exactly two HashMap lookups regardless of how man
 
 ```yaml
 dependencies:
-  easy_state_m: ^1.2.1
+  easy_state_m: ^1.2.2
 ```
 
 ---
@@ -129,8 +129,12 @@ class CounterController extends EasyController {
 
 ### 2. Provide it with EasyScope
 
+`EasyScope` exposes two explicit constructors — pick the one that matches
+who owns the controller's lifecycle. The default constructor is disabled
+on purpose.
+
 ```dart
-EasyScope<CounterController>(
+EasyScope<CounterController>.build(
   create: () => CounterController(),   // owned — scope manages lifecycle
   builder: (context, controller) {
     return Scaffold(
@@ -234,33 +238,38 @@ final authController = AuthController()..initialize();
 
 EasyMultiScope(
   entries: [
-    EasyScopeProvide.value(value: authController),   // shared — lifecycle managed externally
-    EasyScopeProvide(create: () => ThemeController()), // owned — disposed with the scope
+    EasyScopeProvide<AuthController>.share(value: authController),     // shared — lifecycle managed externally
+    EasyScopeProvide<ThemeController>.build(create: () => ThemeController()), // owned — disposed with the scope
   ],
   child: const MyApp(),
 );
 ```
 
+`EasyScopeProvide` mirrors `EasyScope`: `.build` for ownership, `.share` for an
+externally managed instance. The unnamed constructor is disabled.
+
 ---
 
 ## Shared Scope
 
-Use `EasyScope.value` to inject an already-initialized controller across Navigator barriers or into children that should not own the lifecycle.
+Use `EasyScope<T>.share` to inject an already-initialized controller across Navigator barriers or into children that should not own the lifecycle.
 
 ```dart
-// Parent creates and owns the controller.
-final controller = MyController()..initialize();
+// Parent creates and owns the controller via EasyScope<T>.build.
+//
+// To pass it through Navigator without prop-drilling a constructor arg,
+// wrap the destination route with EasyScope<T>.share — the new page can then
+// resolve the controller through EasyScope.of<T>(context).
 
-// Pass it into a new route.
 Navigator.of(context).push(MaterialPageRoute(
-  builder: (_) => EasyScope<MyController>.value(
-    value: controller,
-    child: const ChildPage(),
+  builder: (_) => EasyScope<MyController>.share(
+    value: controller, // captured from the outer builder
+    builder: (_, _) => const ChildPage(),
   ),
 ));
 ```
 
-`EasyScope.value` **does not** call `dispose()` when unmounted.
+`EasyScope<T>.share` **does not** call `dispose()` when unmounted.
 
 ---
 
@@ -289,10 +298,10 @@ tearDown(() => EasyChannel.reset());
 | Class | Role |
 |---|---|
 | `EasyController` | Base class for business logic. Override `channelBindings`, call `refresh()` and `emit<C>()`. |
-| `EasyScope<T>` | Provides `T` to a widget subtree via `InheritedWidget`. Owns or shares the lifecycle. |
+| `EasyScope<T>` | Provides `T` to a widget subtree via `InheritedWidget`. Use `.build` (owned) or `.share` (shared); default ctor disabled. |
 | `EasyConsumer<T>` | Rebuilds when the controller calls `refresh()`. Optionally scoped by `id`. |
 | `EasyMultiScope` | Nests multiple `EasyScope` instances without deep indentation. |
-| `EasyScopeProvide<T>` | An `EasyMultiScope` entry. Use `.value(value: ...)` for shared instances. |
+| `EasyScopeProvide<T>` | An `EasyMultiScope` entry. Use `.build(create: ...)` for owned or `.share(value: ...)` for shared instances; default ctor disabled. |
 | `EasyChannelBinding<T>` | Declares a channel subscription with a typed payload. |
 | `EasyChannelBus` | Abstract interface for the channel bus. Implement to provide test doubles. |
 | `EasyChannel` | Global registry. Use `override` / `reset` in tests. |
@@ -306,7 +315,7 @@ tearDown(() => EasyChannel.reset());
 | Nesting two `EasyScope<T>` of the same type | `FlutterError` thrown in debug mode | Make scopes siblings, or subclass `T` |
 | Omitting `<T>` on `EasyChannelBinding` | `AssertionError` in debug mode | `EasyChannelBinding<MyType>(...)` |
 | Omitting `<C>` on `emit` | `AssertionError` in debug mode | `emit<TargetController>(...)` |
-| Injecting an uninitialized shared controller | `AssertionError` in debug mode | Call `initialize()` before passing to `EasyScope.value` |
+| Injecting an uninitialized shared controller | `AssertionError` in debug mode | Call `initialize()` before passing to `EasyScope<T>.share` |
 | Calling `EasyScope.of(context)` after `await` | Potential `context` invalidation | Store the controller before the async gap |
 
 ---
@@ -409,7 +418,7 @@ controllerType  →  channelName  →  List<handler>
 
 ```yaml
 dependencies:
-  easy_state_m: ^1.2.1
+  easy_state_m: ^1.2.2
 ```
 
 ---
@@ -441,8 +450,10 @@ class CounterController extends EasyController {
 
 ### 2. 用 EasyScope 提供 Controller
 
+`EasyScope` 提供两个显式命名构造，明确表达控制器的生命周期归属，默认构造已禁用：
+
 ```dart
-EasyScope<CounterController>(
+EasyScope<CounterController>.build(
   create: () => CounterController(),   // owned — Scope 管理生命周期
   builder: (context, controller) {
     return Scaffold(
@@ -548,28 +559,32 @@ final authController = AuthController()..initialize();
 
 EasyMultiScope(
   entries: [
-    EasyScopeProvide.value(value: authController),    // shared — 外部管理生命周期
-    EasyScopeProvide(create: () => ThemeController()), // owned  — 随 Scope 销毁
+    EasyScopeProvide<AuthController>.share(value: authController),       // shared — 外部管理生命周期
+    EasyScopeProvide<ThemeController>.build(create: () => ThemeController()), // owned — 随 Scope 销毁
   ],
   child: const MyApp(),
 );
 ```
 
+`EasyScopeProvide` 与 `EasyScope` 对齐：`.build` 表示拥有生命周期，`.share` 表示
+仅注入外部已创建的实例。无名构造已禁用。
+
 ---
 
 ## 共享 Scope
 
-跨路由共享同一个 Controller 实例时，用 `EasyScope.value` 注入，Scope 卸载时**不会**调用 `dispose()`。
+跨路由共享同一个 Controller 实例时，用 `EasyScope<T>.share` 注入。Scope 卸载时**不会**调用 `dispose()`。
 
 ```dart
-// 外部创建并持有 Controller
-final controller = MyController()..initialize();
+// 外部 Page（或上层 EasyScope.build）持有 Controller。
+//
+// 跨 Navigator 时无需把 controller 通过构造参数传递 —
+// 用 EasyScope<T>.share 包一层路由，目标页就能用 EasyScope.of<T>(context) 拿到。
 
-// 注入到新路由
 Navigator.of(context).push(MaterialPageRoute(
-  builder: (_) => EasyScope<MyController>.value(
-    value: controller,
-    child: const ChildPage(),
+  builder: (_) => EasyScope<MyController>.share(
+    value: controller, // 从上层 builder 捕获
+    builder: (_, _) => const ChildPage(),
   ),
 ));
 ```
@@ -601,10 +616,10 @@ tearDown(() => EasyChannel.reset());
 | 类 | 职责 |
 |---|---|
 | `EasyController` | 业务逻辑基类。覆写 `channelBindings`，调用 `refresh()` 和 `emit<C>()`。 |
-| `EasyScope<T>` | 通过 `InheritedWidget` 向子树提供 `T`。支持 owned / shared 两种模式。 |
+| `EasyScope<T>` | 通过 `InheritedWidget` 向子树提供 `T`。用 `.build` (owned) 或 `.share` (shared)；默认构造禁用。 |
 | `EasyConsumer<T>` | Controller 调用 `refresh()` 时重建。可通过 `id` 限定为精准刷新。 |
 | `EasyMultiScope` | 无嵌套缩进地注入多个 `EasyScope`。 |
-| `EasyScopeProvide<T>` | `EasyMultiScope` 的条目。`.value(value: ...)` 用于共享实例。 |
+| `EasyScopeProvide<T>` | `EasyMultiScope` 的条目。`.build(create: ...)` 拥有生命周期，`.share(value: ...)` 共享外部实例；默认构造禁用。 |
 | `EasyChannelBinding<T>` | 声明一个带类型载荷的频道订阅。 |
 | `EasyChannelBus` | 频道总线抽象接口，实现它以提供测试替身。 |
 | `EasyChannel` | 全局注册表。测试中用 `override` / `reset` 替换实现。 |

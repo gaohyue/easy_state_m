@@ -1,5 +1,6 @@
 import 'package:easy_state_m/easy_state_m.dart';
 import 'package:example/controllers/summary_controller.dart';
+import 'package:example/page_a/page_a.dart';
 import 'package:example/pages/task_page.dart';
 import 'package:flutter/material.dart';
 
@@ -42,6 +43,14 @@ class HomePage extends StatelessWidget {
               label: const Text('Open Task List'),
               onPressed: () => Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const TaskPage()),
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              icon: const Icon(Icons.swap_horiz),
+              label: const Text('Open Shared State Demo'),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PageA()),
               ),
             ),
           ],

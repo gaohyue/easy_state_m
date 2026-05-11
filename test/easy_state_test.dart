@@ -241,7 +241,7 @@ void main() {
       late CounterController ctrl;
 
       await tester.pumpWidget(MaterialApp(
-        home: EasyScope<CounterController>(
+        home: EasyScope<CounterController>.build(
           create: () => CounterController(),
           builder: (context, c) {
             ctrl = c;
@@ -268,7 +268,7 @@ void main() {
       late CounterController ctrl;
 
       await tester.pumpWidget(MaterialApp(
-        home: EasyScope<CounterController>(
+        home: EasyScope<CounterController>.build(
           create: () => CounterController(),
           builder: (context, c) {
             ctrl = c;
@@ -311,7 +311,7 @@ void main() {
       const debounce = Duration(milliseconds: 50);
 
       await tester.pumpWidget(MaterialApp(
-        home: EasyScope<CounterController>(
+        home: EasyScope<CounterController>.build(
           create: () => CounterController(),
           builder: (context, c) {
             ctrl = c;
@@ -350,7 +350,7 @@ void main() {
       late CounterController ctrl;
 
       await tester.pumpWidget(MaterialApp(
-        home: EasyScope<CounterController>(
+        home: EasyScope<CounterController>.build(
           create: () => CounterController(),
           builder: (_, c) {
             ctrl = c;
@@ -373,9 +373,9 @@ void main() {
       final shared = CounterController()..initialize();
 
       await tester.pumpWidget(MaterialApp(
-        home: EasyScope<CounterController>.value(
+        home: EasyScope<CounterController>.share(
           value: shared,
-          child: const SizedBox(),
+          builder: (_, _) => const SizedBox(),
         ),
       ));
 
@@ -431,8 +431,9 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: EasyMultiScope(
           entries: [
-            EasyScopeProvide(create: () => CounterController()),
-            EasyScopeProvide(create: () => ReceiverA()),
+            EasyScopeProvide<CounterController>.build(
+                create: () => CounterController()),
+            EasyScopeProvide<ReceiverA>.build(create: () => ReceiverA()),
           ],
           child: Builder(builder: (context) {
             counter = EasyScope.of<CounterController>(context);
@@ -454,8 +455,10 @@ void main() {
       await tester.pumpWidget(MaterialApp(
         home: EasyMultiScope(
           entries: [
-            EasyScopeProvide(create: () => ReceiverB()), // outermost (index 0)
-            EasyScopeProvide(create: () => ReceiverA()), // inner (index 1)
+            EasyScopeProvide<ReceiverB>.build(
+                create: () => ReceiverB()), // outermost (index 0)
+            EasyScopeProvide<ReceiverA>.build(
+                create: () => ReceiverA()), // inner (index 1)
           ],
           child: Builder(builder: (context) {
             // ReceiverB (outermost) must be visible from within ReceiverA's scope.
@@ -474,7 +477,7 @@ void main() {
 
       await tester.pumpWidget(MaterialApp(
         home: EasyMultiScope(
-          entries: [EasyScopeProvide.value(value: shared)],
+          entries: [EasyScopeProvide<CounterController>.share(value: shared)],
           child: const SizedBox(),
         ),
       ));
@@ -497,11 +500,11 @@ void main() {
       FlutterError.onError = errors.add;
 
       await tester.pumpWidget(MaterialApp(
-        home: EasyScope<CounterController>(
+        home: EasyScope<CounterController>.build(
           create: () => CounterController(),
-          builder: (ctx, c) => EasyScope<CounterController>(
+          builder: (ctx, c) => EasyScope<CounterController>.build(
             create: () => CounterController(),
-            child: const SizedBox(),
+            builder: (_, _) => const SizedBox(),
           ),
         ),
       ));

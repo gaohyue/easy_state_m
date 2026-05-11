@@ -13,7 +13,7 @@ class TaskPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // EasyScope owns the lifecycle: TaskController is initialized on mount
     // and disposed when the page is popped.
-    return EasyScope<TaskController>(
+    return EasyScope<TaskController>.build(
       create: () => TaskController(),
       builder: (context, controller) {
         return Scaffold(

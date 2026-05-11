@@ -1,3 +1,71 @@
+## 1.2.2
+
+### Breaking Changes
+
+* **`EasyScope` — default constructor removed.** Use the explicit named
+  constructors that declare lifecycle ownership:
+  * `EasyScope<T>.build(create: ..., builder: (ctx, controller) => ...)` —
+    the scope owns the controller (calls `initialize()` / `dispose()`).
+  * `EasyScope<T>.share(value: ..., builder: (ctx, controller) => ...)` —
+    the scope wraps an externally managed controller and never disposes it.
+    Replaces the former `EasyScope.value`.
+* **`EasyScopeProvide` — default constructor removed.** Same `.build` /
+  `.share` split as `EasyScope`:
+  * `EasyScopeProvide<T>.build(create: () => T())` (was the unnamed ctor).
+  * `EasyScopeProvide<T>.share(value: existing)` (was `EasyScopeProvide.value`).
+* **`EasyScope` — `child` parameter removed.** All scopes now consume the
+  unified two-argument `EasyScopeBuilder<T>` of the form
+  `(BuildContext context, T controller) => Widget`. When you do not need the
+  controller directly (e.g. inside `EasyMultiScope` adapters), use
+  `builder: (_, _) => myChild` instead of the old `child:` parameter.
+
+### Improvements
+
+* Added the `EasyScopeBuilder<T>` typedef and exposed it as the public
+  signature for both `EasyScope.build` and `EasyScope.share`.
+* `EasyScope` doc-comments and error hints now point at the new `.build` /
+  `.share` constructors.
+* Example app rewritten: PageA → PageB demo shows the recommended pattern of
+  re-injecting a controller across a Navigator barrier with
+  `EasyScope<T>.share` so that the destination page can resolve it with
+  `EasyScope.of<T>(context)` without taking it through a widget constructor.
+
+### Migration
+
+```dart
+// Before (1.2.1)
+EasyScope<CounterController>(
+  create: () => CounterController(),
+  builder: (context, controller) => CounterView(),
+);
+
+EasyScope<AuthController>.value(
+  value: authController,
+  child: const ProfilePage(),
+);
+
+EasyMultiScope(entries: [
+  EasyScopeProvide(create: () => CartController()),
+  EasyScopeProvide.value(value: authController),
+]);
+
+// After (1.2.2)
+EasyScope<CounterController>.build(
+  create: () => CounterController(),
+  builder: (context, controller) => CounterView(),
+);
+
+EasyScope<AuthController>.share(
+  value: authController,
+  builder: (_, _) => const ProfilePage(),
+);
+
+EasyMultiScope(entries: [
+  EasyScopeProvide<CartController>.build(create: () => CartController()),
+  EasyScopeProvide<AuthController>.share(value: authController),
+]);
+```
+
 ## 1.2.1
 
 * Fix compatibility: replace Dart 3 record type `(String, void Function(dynamic))`

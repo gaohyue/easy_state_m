@@ -39,8 +39,8 @@ import 'package:flutter/widgets.dart';
 /// ```dart
 /// EasyMultiScope(
 ///   entries: [
-///     EasyScopeProvide(create: () => AuthController()),
-///     EasyScopeProvide(create: () => CartController()),
+///     EasyScopeProvide<AuthController>.build(create: () => AuthController()),
+///     EasyScopeProvide<CartController>.build(create: () => CartController()),
 ///   ],
 ///   child: const MyApp(),
 /// );
@@ -542,32 +542,34 @@ typedef EasyScopeBuilder<T extends EasyController> = Widget Function(
 /// [EasyScope] uses Flutter's `InheritedWidget` mechanism, so any descendant
 /// can look up the controller with [EasyScope.of] or [EasyScope.maybeOf].
 ///
-/// ## Owned scope
+/// Direct instantiation (`EasyScope()`) is not supported. Choose between two
+/// named constructors based on who owns the controller's lifecycle:
 ///
-/// Use the default constructor when the scope owns the controller's lifecycle.
-/// [EasyScope] calls [EasyController.initialize] on mount and
-/// [EasyController.dispose] on unmount.
+/// - [EasyScope.build] — local (owned) scope: creates the controller, calls
+///   [EasyController.initialize] on mount, and disposes it on unmount.
+/// - [EasyScope.share] — shared scope: wraps an already-initialized controller
+///   (typically one looked up from an ancestor with [EasyScope.of]). The scope
+///   never disposes a shared controller.
 ///
 /// ```dart
-/// EasyScope<CounterController>(
-///   create: () => CounterController(),
-///   builder: (context, controller) => CounterView(),
+/// // Owned — the scope creates and destroys the controller.
+/// EasyScope<PageAController>.build(
+///   create: () => PageAController(),
+///   builder: (context, controller) => PageAView(),
 /// );
-/// ```
 ///
-/// ## Shared scope
-///
-/// Use [EasyScope.value] to inject an already-initialized controller
-/// (e.g., one shared across routes). The scope does **not** dispose it.
-///
-/// ```dart
-/// EasyScope<AuthController>.value(
-///   value: myAuthController, // must have initialize() already called
-///   child: const ProfilePage(),
+/// // Shared — `PageB` reuses a controller created elsewhere.
+/// EasyScope<PageAController>.share(
+///   value: EasyScope.of<PageAController>(context),
+///   builder: (context, controller) => const PageB(),
 /// );
 /// ```
 ///
 /// ## Looking up the controller
+///
+/// The [builder]'s second argument exposes the controller directly, so the
+/// common case does not need a lookup. When you need to reach the controller
+/// from a deeper widget (or from outside the builder), use:
 ///
 /// ```dart
 /// // Throws if not found — use inside a guaranteed subtree.
@@ -580,48 +582,37 @@ class EasyScope<T extends EasyController> extends StatefulWidget {
   final T Function()? _create;
   final T? _value;
 
-  /// An optional builder that receives the controller directly.
+  /// Builds the subtree below this scope.
   ///
-  /// Provide either [builder] or [child], not both.
-  final EasyScopeBuilder<T>? builder;
-
-  /// An optional child widget that does not need direct access to the controller.
-  ///
-  /// Provide either [builder] or [child], not both.
-  final Widget? child;
+  /// Receives the [BuildContext] positioned below the inherited scope and the
+  /// freshly created (or injected) controller of type [T]. The controller is
+  /// also reachable from descendants via `EasyScope.of<T>(context)` and
+  /// [EasyConsumer].
+  final EasyScopeBuilder<T> builder;
 
   final bool _isShared;
 
-  /// Creates an owned [EasyScope] that manages the controller's lifecycle.
+  /// Creates a local (owned) [EasyScope] that manages the controller's lifecycle.
   ///
-  /// [create] is called once on mount. Provide exactly one of [builder] or [child].
-  const EasyScope({
+  /// [create] is called once on mount and the controller is disposed on unmount.
+  const EasyScope.build({
     required T Function() create,
-    this.builder,
-    this.child,
+    required this.builder,
     super.key,
-  })  : assert(
-          (builder == null) != (child == null),
-          '[Easy State] Provide either a builder or a child, but not both.',
-        ),
-        _create = create,
+  })  : _create = create,
         _value = null,
         _isShared = false;
 
   /// Creates a shared [EasyScope] that wraps an externally managed controller.
   ///
   /// The provided [value] must already have had [EasyController.initialize]
-  /// called. This scope does **not** call [EasyController.dispose].
-  const EasyScope.value({
+  /// called — typically because it came from an ancestor [EasyScope.build] or
+  /// [EasyScopeProvide]. This scope does **not** call [EasyController.dispose].
+  const EasyScope.share({
     required T value,
-    this.builder,
-    this.child,
+    required this.builder,
     super.key,
-  })  : assert(
-          (builder == null) != (child == null),
-          '[Easy State] Provide either a builder or a child, but not both.',
-        ),
-        _value = value,
+  })  : _value = value,
         _create = null,
         _isShared = true;
 
@@ -684,7 +675,7 @@ class _EasyScopeState<T extends EasyController> extends State<EasyScope<T>> {
       _controller = widget._value!;
       assert(
         _controller.isInitialized,
-        '[Easy State] The controller passed to EasyScope<$T>.value has not been '
+        '[Easy State] The controller passed to EasyScope<$T>.share has not been '
         'initialized. Call initialize() before injecting a shared instance.',
       );
     }
@@ -721,7 +712,7 @@ class _EasyScopeState<T extends EasyController> extends State<EasyScope<T>> {
       _controller = widget._value!;
       assert(
         _controller.isInitialized,
-        '[Easy State] The replacement controller for EasyScope<$T>.value has not '
+        '[Easy State] The replacement controller for EasyScope<$T>.share has not '
         'been initialized.',
       );
     }
@@ -737,8 +728,9 @@ class _EasyScopeState<T extends EasyController> extends State<EasyScope<T>> {
   Widget build(BuildContext context) {
     return _EasyInheritedScope<T>(
       controller: _controller,
-      child: widget.child ??
-          Builder(builder: (ctx) => widget.builder!(ctx, _controller)),
+      child: Builder(
+        builder: (innerContext) => widget.builder(innerContext, _controller),
+      ),
     );
   }
 }
@@ -856,7 +848,7 @@ class _EasyConsumerState<T extends EasyController>
         ),
         ErrorHint(
           'Wrap the relevant part of your widget tree with '
-          'EasyScope<$T>(create: () => $T(), ...).',
+          'EasyScope<$T>.build(create: () => $T(), ...).',
         ),
       ]);
     }
@@ -879,14 +871,18 @@ abstract class EasyScopeEntry {
 
 /// An [EasyScopeEntry] that provides an [EasyController] of type [T].
 ///
-/// Use the default constructor to let [EasyMultiScope] own the controller
-/// lifecycle, or use [EasyScopeProvide.value] for a shared instance.
+/// Direct instantiation (`EasyScopeProvide()`) is not supported. Choose one
+/// of the named constructors based on who owns the controller's lifecycle:
+///
+/// - [EasyScopeProvide.build] — the scope creates and disposes the controller.
+/// - [EasyScopeProvide.share] — wraps an already-initialized controller; the
+///   scope never disposes it.
 ///
 /// ```dart
 /// EasyMultiScope(
 ///   entries: [
-///     EasyScopeProvide(create: () => AuthController()),
-///     EasyScopeProvide.value(value: sharedCartController),
+///     EasyScopeProvide<AuthController>.build(create: () => AuthController()),
+///     EasyScopeProvide<CartController>.share(value: sharedCartController),
 ///   ],
 ///   child: const MyApp(),
 /// );
@@ -902,20 +898,27 @@ class EasyScopeProvide<T extends EasyController> extends EasyScopeEntry {
   final bool isShared;
 
   /// Creates an entry that owns the controller's lifecycle.
-  EasyScopeProvide({required this.create})
+  ///
+  /// The framework calls [EasyController.initialize] when the scope mounts
+  /// and [EasyController.dispose] when it unmounts.
+  EasyScopeProvide.build({required this.create})
       : value = null,
         isShared = false;
 
   /// Creates an entry that wraps an already-initialized shared controller.
-  EasyScopeProvide.value({required this.value})
+  ///
+  /// The provided [value] must have had [EasyController.initialize] called
+  /// before being passed in. The scope does **not** call
+  /// [EasyController.dispose] — lifecycle stays with the caller.
+  EasyScopeProvide.share({required this.value})
       : create = null,
         isShared = true;
 
   @override
   Widget build(Widget child) {
     return isShared
-        ? EasyScope<T>.value(value: value!, child: child)
-        : EasyScope<T>(create: create!, child: child);
+        ? EasyScope<T>.share(value: value!, builder: (_, _) => child)
+        : EasyScope<T>.build(create: create!, builder: (_, _) => child);
   }
 }
 
@@ -928,8 +931,8 @@ class EasyScopeProvide<T extends EasyController> extends EasyScopeEntry {
 /// ```dart
 /// EasyMultiScope(
 ///   entries: [
-///     EasyScopeProvide(create: () => AuthController()),   // outermost
-///     EasyScopeProvide(create: () => CartController()),   // can see AuthController
+///     EasyScopeProvide<AuthController>.build(create: () => AuthController()), // outermost
+///     EasyScopeProvide<CartController>.build(create: () => CartController()), // can see AuthController
 ///   ],
 ///   child: const HomeScreen(),
 /// );

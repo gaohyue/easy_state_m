@@ -19,13 +19,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // EasyMultiScope nests all app-level scopes without deep indentation.
-    // SummaryController is shared (externally managed), so EasyScope.value
+    // SummaryController is shared (externally managed), so EasyScopeProvide.share
     // is used — the scope does NOT dispose it on unmount.
     //
     // Add more app-level controllers here as EasyScopeProvide entries.
     return EasyMultiScope(
       entries: [
-        EasyScopeProvide.value(value: summaryController),
+        EasyScopeProvide<SummaryController>.share(value: summaryController),
       ],
       child: MaterialApp(
         title: 'Easy State Demo',
